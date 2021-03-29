@@ -1,4 +1,4 @@
-# Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,18 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
+
 """Preprocessing functions for images."""
 
-from __future__ import absolute_import
-from __future__ import division
-# from __future__ import google_type_annotations
-from __future__ import print_function
-
-import tensorflow as tf
-from typing import List, Optional, Text, Tuple
-
-from official.vision.image_classification import augment
 
 
 # Calculated from the ImageNet training set
@@ -276,6 +267,33 @@ def resize_image(image_bytes: tf.Tensor,
   return tf.compat.v1.image.resize(
       image_bytes, [height, width], method=tf.image.ResizeMethod.BILINEAR,
       align_corners=False)
+  
+def ColorJitter(image,
+                brightness = None,
+                contrast = None,
+                saturation = None,
+                hue= None):
+  
+  if brightness is not None:
+    image = tf.image.random_brightness(image, brightness)
+  
+  if contrast is not None:
+    if type(contrast) != list:
+      contrast = [0, contrast]
+    image = tf.image.random_contrast(image, contrast[0],contrast[1])
+
+  if saturation is not None:
+    if type(saturation) != list:
+      saturation = [0, saturation]
+    image = image = tf.image.random_saturation(image, saturation[0],saturation[1])
+
+  if hue is not None:
+    image = image = tf.image.stateless_random_hue(image, hue)
+  
+  return image
+
+
+    
 
 def preprocess_for_eval(
     image_bytes: tf.Tensor,
@@ -376,15 +394,8 @@ def preprocess_for_train(image_bytes: tf.Tensor,
   Returns:
     A preprocessed and normalized image `Tensor`.
   """
-  rng = tf.random.get_global_generator()
-  seed = rng.make_seeds(count=1)
-
   images = decode_crop_and_flip(image_bytes=image_bytes)
-
-  # color jittering (0.3, 0.3, 0.3)
-  images = tf.image.stateless_random_brightness(images, 0.3, seed=seed)
-  images = tf.image.stateless_random_contrast(images, 0, 0.3, seed=seed)
-  images = tf.image.stateless_random_saturation(images, 0, 0.3, seed=seed)
+  images = ColorJitter(images,0.3,0.3,0.3)
   images = resize_image(images, height=image_size, width=image_size)
   if augmenter is not None:
     images = augmenter.distort(images)
@@ -396,3 +407,18 @@ def preprocess_for_train(image_bytes: tf.Tensor,
     images = tf.image.convert_image_dtype(images, dtype)
 
   return images
+
+def load_train_image(filename: Text, image_size: int = IMAGE_SIZE) -> tf.Tensor:
+  """Reads an image from the filesystem and applies image preprocessing.
+
+  Args:
+    filename: a filename path of an image.
+    image_size: image height/width dimension.
+
+  Returns:
+    A preprocessed and normalized image `Tensor`.
+  """
+  image_bytes = tf.io.read_file(filename)
+  image = preprocess_for_train(image_bytes, image_size)
+
+  return image
