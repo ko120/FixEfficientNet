@@ -268,7 +268,7 @@ def resize_image(image_bytes: tf.Tensor,
       image_bytes, [height, width], method=tf.image.ResizeMethod.BILINEAR,
       align_corners=False)
   
-def ColorJitter(image,
+def colorJitter(image,
                 brightness = None,
                 contrast = None,
                 saturation = None,
@@ -395,7 +395,7 @@ def preprocess_for_train(image_bytes: tf.Tensor,
     A preprocessed and normalized image `Tensor`.
   """
   images = decode_crop_and_flip(image_bytes=image_bytes)
-  images = ColorJitter(images,0.3,0.3,0.3)
+  images = colorJitter(images,0.3,0.3,0.3)
   images = resize_image(images, height=image_size, width=image_size)
   if augmenter is not None:
     images = augmenter.distort(images)
