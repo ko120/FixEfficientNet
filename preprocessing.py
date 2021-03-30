@@ -268,7 +268,7 @@ def resize_image(image_bytes: tf.Tensor,
       image_bytes, [height, width], method=tf.image.ResizeMethod.BILINEAR,
       align_corners=False)
   
-def colorJitter(image,
+def ColorJitter(image,
                 brightness = None,
                 contrast = None,
                 saturation = None,
@@ -279,12 +279,12 @@ def colorJitter(image,
   
   if contrast is not None:
     if type(contrast) != list:
-      contrast = [0, contrast]
+      contrast = [max(0, 1 - contrast), 1 + contrast]
     image = tf.image.random_contrast(image, contrast[0],contrast[1])
 
   if saturation is not None:
     if type(saturation) != list:
-      saturation = [0, saturation]
+      saturation = [max(0, 1- saturation), 1 + saturation]
     image = image = tf.image.random_saturation(image, saturation[0],saturation[1])
 
   if hue is not None:
@@ -395,7 +395,7 @@ def preprocess_for_train(image_bytes: tf.Tensor,
     A preprocessed and normalized image `Tensor`.
   """
   images = decode_crop_and_flip(image_bytes=image_bytes)
-  images = colorJitter(images,0.3,0.3,0.3)
+  images = ColorJitter(images,0.3,0.3,0.3)
   images = resize_image(images, height=image_size, width=image_size)
   if augmenter is not None:
     images = augmenter.distort(images)
